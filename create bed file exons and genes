@@ -1,0 +1,2 @@
+#exons and genes, which they belong to
+join -1 4 -2 4 <(sort -k4 exons_modif.bed ) <(sort -k4 canonical.bed) | awk '{print $2"\t"$3"\t"$4"\t"$10"\t"$5"\t"$6}' | ./bedtools2/bin/bedtools sort -i "-" > exons_modif_canonical.bed
