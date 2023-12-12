@@ -20,8 +20,9 @@ do
   # Извлекаем id файла из ссылки
   id=$(basename "$file_link" .smoove.square.anno.vcf.gz)
 
-  # Выполняем команды для обработки файла
+  # оставление только делеций
   bcftools query -f '%CHROM\t%POS\t%END\n' -i 'SVTYPE="DEL"' "$file_link" > "$id.deletions.bed"
+  # делаем аннотирование делеций (помеяаем к какому гену пренадлежат) и пересечение с экзонами
   ./bedtools2/bin/bedtools annotate -i "$id.deletions.bed" -files exons_modif_canonical.bed > "$id.annotated_deletions.bed"
   ./bedtools2/bin/bedtools intersect -a "$id.annotated_deletions.bed" -b exons_modif_canonical.bed -wa -wb > "sibir_principally/$id.deletions.annotate.bed"
 
