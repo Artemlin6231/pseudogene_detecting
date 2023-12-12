@@ -1,0 +1,38 @@
+import os
+from tqdm import tqdm 
+bed_files = []
+dir_path = '' #link to file location
+extension = '.annotate.bed'
+for file_name in os.listdir(dir_path):
+    if file_name.endswith(extension):
+        full_file_name = os.path.join(dir_path, file_name)
+        bed_files.append(full_file_name)
+
+pseudogenes_dataframe_myself_ann = []
+for i  in tqdm(range(len(bed_files))):
+    link = bed_files[i]
+    #фильтрация данных из файла
+    df_test_bed_tools = pd.read_csv(link,sep = '\t',header = None)
+    df_test_bed_tools = df_test_bed_tools[[0,1,2,3,7]]
+    df_test_bed_tools = df_test_bed_tools[~df_test_bed_tools[7].str.contains('ENSG')].reset_index(drop = True)
+    genes = df_test_bed_tools[7].unique().tolist()
+    dataframe_gene_deletions = []
+    #подсчет делеций, пересекающихся с экзонами для каждого гена
+    for gene in genes:
+        df_gene = df_test_bed_tools[df_test_bed_tools[7]==gene]
+        deletions = df_gene[1].unique().tolist()
+
+        count = len(deletions)
+        dataframe_gene_deletions.append([gene,deletions,count])
+    dataframe_gene_deletions = pd.DataFrame(dataframe_gene_deletions,columns = ['gene','deletions','quantity'])
+    #удаление генов, где произошло меньше 2 делеций - точно не псевдоген
+    dataframe_gene_deletions_filter = dataframe_gene_deletions[dataframe_gene_deletions['quantity']>1]
+    pseudogenes = dataframe_gene_deletions_filter['gene'].unique().tolist()
+    pseudogenes_dataframe_myself_ann.append([link,pseudogenes])
+pseudogenes_dataframe_myself_ann = pd.DataFrame(pseudogenes_dataframe_myself_ann,columns = ['id','pseudogenes'])  
+def names(string):
+    a = len('.deletions.annotate.bed')
+    string = os.path.basename(string)[:-a]
+    return string
+#добавление колонки с именем образца
+pseudogenes_dataframe_myself_ann['names'] = pseudogenes_dataframe_myself_ann['id'].apply(names)
