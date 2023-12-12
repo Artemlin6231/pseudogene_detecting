@@ -1,0 +1,31 @@
+#!/bin/bash
+
+# Проверяем, передан ли аргумент командной строки
+if [ $# -eq 0 ]; then
+  echo "Путь к файлу не был указан."
+  exit 1
+fi
+#список vcfok: в каждой строке файла ссылка на одну vcfку со структурными вариантами(файл работы smoove)
+file_list="$1"
+
+# Проверяем существование файла
+if [ ! -f "$file_list" ]; then
+  echo "Файл $file_list не существует."
+  exit 1
+fi
+
+# Исполняем команды для каждой строки файла
+while IFS= read -r file_link
+do
+  # Извлекаем id файла из ссылки
+  id=$(basename "$file_link" .smoove.square.anno.vcf.gz)
+
+  # Выполняем команды для обработки файла
+  bcftools query -f '%CHROM\t%POS\t%END\n' -i 'SVTYPE="DEL"' "$file_link" > "$id.deletions.bed"
+  ./bedtools2/bin/bedtools annotate -i "$id.deletions.bed" -files exons_modif_canonical.bed > "$id.annotated_deletions.bed"
+  ./bedtools2/bin/bedtools intersect -a "$id.annotated_deletions.bed" -b exons_modif_canonical.bed -wa -wb > "sibir_principally/$id.deletions.annotate.bed"
+
+  #удаляем ненужные промежуточные файлы
+  rm "$id.deletions.bed"
+  rm "$id.annotated_deletions.bed"
+done < "$file_list"
